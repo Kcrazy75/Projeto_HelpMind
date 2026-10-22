@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # 1. O nosso Load Balancer (nGINx)
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - backend_node1
+      - backend_node2
+
+  # 2. Nó 1 do Backend (Python)
+  backend_node1:
+    build: ./backend
+    expose:
+      - "8000"
+    environment:
+      - NODE_ID=1
+      - DATABASE_URL=mysql+pymysql://user:password@db:3306/helpmind
+    depends_on:
+      - db
+
+  # 3. Nó 2 do Backend (Python - Para provar tolerância a falhas!)
+  backend_node2:
+    build: ./backend
+    expose:
+      - "8000"
+    environment:
+      - NODE_ID=2
+      - DATABASE_URL=mysql+pymysql://user:password@db:3306/helpmind
+    depends_on:
+      - db
+
+  # 4. A nossa Base de Dados (MySQL)
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: helpmind
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
